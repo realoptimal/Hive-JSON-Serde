@@ -31,7 +31,6 @@ import org.apache.hadoop.io.Writable;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.hadoop.hive.serde2.SerDeStats;
 import org.apache.hadoop.hive.serde2.objectinspector.ListObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.MapObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector.Category;
@@ -67,11 +66,6 @@ public class JsonSerDe implements SerDe {
     StructTypeInfo rowTypeInfo;
     StructObjectInspector rowObjectInspector;
     boolean[] columnSortOrderIsDesc;
-    
-    private SerDeStats stats;
-    private boolean lastOperationSerialize;
-    long deserializedDataSize;
-    long serializedDataSize;
     
        // if set, will ignore malformed JSON in deserialization
     boolean ignoreMalformedJson = false;
@@ -111,8 +105,6 @@ public class JsonSerDe implements SerDe {
         }
         assert (columnNames.size() == columnTypes.size());
 
-	stats = new SerDeStats();
-	
         // Create row related objects
         rowTypeInfo = (StructTypeInfo) TypeInfoFactory.getStructTypeInfo(columnNames, columnTypes);
         rowObjectInspector = (StructObjectInspector) JsonObjectInspectorFactory.getJsonObjectInspectorFromTypeInfo(rowTypeInfo);
@@ -141,7 +133,6 @@ public class JsonSerDe implements SerDe {
     @Override
     public Object deserialize(Writable w) throws SerDeException {
         Text rowText = (Text) w;
-        deserializedDataSize = rowText.getBytes().length;
 	
         // Try parsing row into JSON object
         JSONObject jObj = null;
@@ -216,7 +207,6 @@ public class JsonSerDe implements SerDe {
         
         Text t = new Text(serializer.toString());
         
-	serializedDataSize = t.getBytes().length;
         return t;
     }
 
@@ -383,14 +373,5 @@ public class JsonSerDe implements SerDe {
         }
     }
 
-    @Override
-    public SerDeStats getSerDeStats() {
-	if(lastOperationSerialize) {
-            stats.setRawDataSize(serializedDataSize);
-        } else {
-            stats.setRawDataSize(deserializedDataSize);
-        }
-        return stats;
-    }
-    
+
 }
